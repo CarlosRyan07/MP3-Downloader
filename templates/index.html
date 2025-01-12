@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Downloader de Áudio</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header class="header">
+        <h1>Downloader de Áudio</h1>
+        <p>Baixe música ou playlists inteiras de forma rápida e fácil.</p>
+    </header>
+    <main class="container">
+        <section class="download-section">
+            <form id="download-form">
+                <label for="url">Insira a URL do Vídeo ou Playlist:</label>
+                <input type="text" id="url" name="url" placeholder="Digite a URL aqui" required>
+
+                <label for="format">Escolha o formato:</label>
+                <select id="format" name="format">
+                    <option value="mp3">MP3</option>
+                    <option value="mp4">MP4</option>
+                </select>
+
+                <button type="submit">Download</button>
+            </form>
+        </section>
+        <section class="status-section">
+            <h2>Downloads Realizados:</h2>
+            <p id="status">Não há download em andamento.</p>
+            <div id="progress-bar">
+                <div id="progress"></div>
+            </div>
+            <div id="downloads-list"></div>
+        </section>
+    </main>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        const form = document.getElementById("download-form");
+        const statusElement = document.getElementById("status");
+        const progressBar = document.getElementById("progress");
+        const downloadsList = document.getElementById("downloads-list");
+    
+        let progressInterval;
+    
+        const socket = io();
+    
+        // Atualização de progresso via WebSocket
+        socket.on("progress", (data) => {
+            // Completa a barra de progresso e exibe a mensagem final
+            if (data.message.includes("concluído")) {
+                clearInterval(progressInterval); // Para a animação da barra
+                progressBar.style.width = "100%"; // Completa a barra
+                statusElement.textContent = `${data.title} baixada com sucesso! 🎉`;
+    
+                // Adiciona o nome da música baixada à lista de downloads (evitando duplicação)
+                if (!Array.from(downloadsList.children).some((item) => item.textContent === data.title)) {
+                    const musicItem = document.createElement("p");
+                    musicItem.textContent = data.title;
+                    downloadsList.appendChild(musicItem);
+                }
+            }
+        });
+    
+        // Enviar formulário via AJAX
+        form.addEventListener("submit", (event) => {
+            event.preventDefault(); // Impede o envio padrão do formulário
+    
+            const formData = new FormData(form);
+    
+            // Inicia o download e a animação da barra
+            statusElement.textContent = "Baixando música...";
+            progressBar.style.width = "0%"; // Reseta a barra
+    
+            let progress = 0;
+            clearInterval(progressInterval); // Garante que nenhuma animação anterior esteja rodando
+            progressInterval = setInterval(() => {
+                if (progress < 90) { // Simula o progresso até 90%
+                    progress += 5; // Incrementa a barra em 5%
+                    progressBar.style.width = `${progress}%`;
+                }
+            }, 300);
+    
+            // Envia a requisição AJAX
+            fetch("/download", {
+                method: "POST",
+                body: formData,
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    // Quando o download for concluído
+                    clearInterval(progressInterval); // Para a animação da barra
+                    progressBar.style.width = "100%"; // Completa a barra
+                    statusElement.textContent = `${data.title} baixada com sucesso! 🎉`;
+    
+                    // Adiciona o nome da música baixada à lista de downloads (evitando duplicação)
+                    if (!Array.from(downloadsList.children).some((item) => item.textContent === data.title)) {
+                        const musicItem = document.createElement("p");
+                        musicItem.textContent = data.title;
+                        downloadsList.appendChild(musicItem);
+                    }
+                })
+                .catch((error) => {
+                    clearInterval(progressInterval); // Para qualquer animação em andamento
+                    statusElement.textContent = "Erro ao realizar o download.";
+                    console.error("Erro:", error);
+                });
+        });
+    </script>
+    
+</body>
+</html>
