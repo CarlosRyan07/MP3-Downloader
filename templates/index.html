@@ -23,7 +23,7 @@
                     <option value="mp4">MP4</option>
                 </select>
 
-                <button type="submit">Download</button>
+                <button id="download-btn" type="submit">Download</button>
             </form>
         </section>
         <section class="status-section">
@@ -41,73 +41,94 @@
         const statusElement = document.getElementById("status");
         const progressBar = document.getElementById("progress");
         const downloadsList = document.getElementById("downloads-list");
-    
-        let progressInterval;
-    
+        const downloadButton = document.getElementById("download-btn");
+
         const socket = io();
-    
+        let downloadInProgress = false; // Variável para rastrear o estado do download
+
         // Atualização de progresso via WebSocket
         socket.on("progress", (data) => {
-            // Completa a barra de progresso e exibe a mensagem final
+            if (data.message.includes("iniciado")) {
+                // Inicia a barra de progresso quando o download começar no servidor
+                startProgressBar();
+                statusElement.textContent = "Baixando música...";
+            }
+
             if (data.message.includes("concluído")) {
-                clearInterval(progressInterval); // Para a animação da barra
-                progressBar.style.width = "100%"; // Completa a barra
-                statusElement.textContent = `${data.title} baixada com sucesso! 🎉`;
-    
-                // Adiciona o nome da música baixada à lista de downloads (evitando duplicação)
-                if (!Array.from(downloadsList.children).some((item) => item.textContent === data.title)) {
-                    const musicItem = document.createElement("p");
-                    musicItem.textContent = data.title;
-                    downloadsList.appendChild(musicItem);
-                }
+                completeProgressBar(data.title);
             }
         });
-    
-        // Enviar formulário via AJAX
-        form.addEventListener("submit", (event) => {
-            event.preventDefault(); // Impede o envio padrão do formulário
-    
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            if (downloadInProgress) {
+                statusElement.textContent = "Aguarde o download atual ser concluído.";
+                return;
+            }
+
             const formData = new FormData(form);
-    
-            // Inicia o download e a animação da barra
-            statusElement.textContent = "Baixando música...";
-            progressBar.style.width = "0%"; // Reseta a barra
-    
-            let progress = 0;
-            clearInterval(progressInterval); // Garante que nenhuma animação anterior esteja rodando
-            progressInterval = setInterval(() => {
-                if (progress < 90) { // Simula o progresso até 90%
-                    progress += 5; // Incrementa a barra em 5%
-                    progressBar.style.width = `${progress}%`;
-                }
-            }, 300);
-    
-            // Envia a requisição AJAX
-            fetch("/download", {
-                method: "POST",
-                body: formData,
-            })
-                .then((response) => response.json())
-                .then((data) => {
-                    // Quando o download for concluído
-                    clearInterval(progressInterval); // Para a animação da barra
-                    progressBar.style.width = "100%"; // Completa a barra
-                    statusElement.textContent = `${data.title} baixada com sucesso! 🎉`;
-    
-                    // Adiciona o nome da música baixada à lista de downloads (evitando duplicação)
-                    if (!Array.from(downloadsList.children).some((item) => item.textContent === data.title)) {
-                        const musicItem = document.createElement("p");
-                        musicItem.textContent = data.title;
-                        downloadsList.appendChild(musicItem);
-                    }
-                })
-                .catch((error) => {
-                    clearInterval(progressInterval); // Para qualquer animação em andamento
-                    statusElement.textContent = "Erro ao realizar o download.";
-                    console.error("Erro:", error);
+            const urlInput = document.getElementById("url").value;
+
+            // Validação da URL
+            if (!urlInput.startsWith("http") || urlInput.trim() === "") {
+                statusElement.textContent = "URL inválida. Por favor, insira uma URL válida.";
+                progressBar.style.width = "0%"; // Reseta a barra de progresso
+                return;
+            }
+
+            try {
+                // Envia a requisição ao servidor para iniciar o download
+                downloadInProgress = true;
+                downloadButton.disabled = true;
+                statusElement.textContent = "Solicitando download ao servidor...";
+
+                const response = await fetch("/download", {
+                    method: "POST",
+                    body: formData,
                 });
+
+                if (!response.ok) {
+                    throw new Error("Erro ao iniciar o download. Verifique a URL e tente novamente.");
+                }
+
+                const data = await response.json();
+                if (data.status === "iniciado") {
+                    statusElement.textContent = "Download iniciado com sucesso!";
+                }
+            } catch (error) {
+                statusElement.textContent = `Erro: ${error.message}`;
+                console.error("Erro:", error);
+                downloadInProgress = false;
+                downloadButton.disabled = false;
+            }
         });
+
+        function startProgressBar() {
+            let progress = 0;
+            const interval = setInterval(() => {
+                if (progress < 90) {
+                    progress += 0.3;
+                    progressBar.style.width = `${progress}%`;
+                } else {
+                    clearInterval(interval);
+                }
+            }, 100);
+        }
+
+        function completeProgressBar(title) {
+            progressBar.style.width = "100%";
+            statusElement.textContent = `${title} baixada com sucesso! 🎉`;
+
+            // Adiciona o título na lista de downloads
+            const musicItem = document.createElement("p");
+            musicItem.textContent = title;
+            downloadsList.prepend(musicItem);
+
+            // Libera o botão de download
+            downloadInProgress = false;
+            downloadButton.disabled = false;
+        }
     </script>
-    
 </body>
 </html>
