@@ -5,6 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Downloader de Áudio</title>
     <link rel="stylesheet" href="/static/style.css">
+    <style>
+        #download-btn:disabled {
+            background-color: #119803;
+            color: #e3e1e1;
+            cursor: not-allowed;
+        }
+
+        #download-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        #download-btn:hover:enabled {
+            background-color: #218838;
+        }
+
+        #progress-bar {
+            width: 100%;
+            background-color: #f3f3f3;
+            height: 20px;
+            margin-top: 10px;
+        }
+
+        #progress {
+            height: 100%;
+            width: 0;
+            background-color: #28a745;
+        }
+    </style>
 </head>
 <body>
     <header class="header">
@@ -24,6 +58,7 @@
                 </select>
 
                 <button id="download-btn" type="submit">Download</button>
+                <div class="spinner" id="spinner"></div>
             </form>
         </section>
         <section class="status-section">
@@ -42,93 +77,80 @@
         const progressBar = document.getElementById("progress");
         const downloadsList = document.getElementById("downloads-list");
         const downloadButton = document.getElementById("download-btn");
+        const spinner = document.getElementById("spinner");
 
         const socket = io();
-        let downloadInProgress = false; // Variável para rastrear o estado do download
 
-        // Atualização de progresso via WebSocket
         socket.on("progress", (data) => {
-            if (data.message.includes("iniciado")) {
-                // Inicia a barra de progresso quando o download começar no servidor
-                startProgressBar();
-                statusElement.textContent = "Baixando música...";
-            }
-
             if (data.message.includes("concluído")) {
-                completeProgressBar(data.title);
+                progressBar.style.transition = 'width 1s ease-out'; 
+                progressBar.style.width = "100%"; 
+                statusElement.textContent = `${data.title} baixada com sucesso! 🎉`;
+
+                if (!Array.from(downloadsList.children).some((item) => item.textContent === data.title)) {
+                    const musicItem = document.createElement("p");
+                    musicItem.textContent = data.title;
+                    downloadsList.prepend(musicItem);
+                }
+
+                downloadButton.disabled = false;
+                spinner.style.display = 'none';
             }
         });
 
         form.addEventListener("submit", async (event) => {
             event.preventDefault();
-
-            if (downloadInProgress) {
-                statusElement.textContent = "Aguarde o download atual ser concluído.";
-                return;
-            }
+            statusElement.textContent = "Baixando informações da música...";
+            progressBar.style.transition = 'none';
+            progressBar.style.width = "0%";
+            downloadButton.disabled = true;
+            spinner.style.display = 'inline-block';
 
             const formData = new FormData(form);
             const urlInput = document.getElementById("url").value;
 
-            // Validação da URL
             if (!urlInput.startsWith("http") || urlInput.trim() === "") {
                 statusElement.textContent = "URL inválida. Por favor, insira uma URL válida.";
-                progressBar.style.width = "0%"; // Reseta a barra de progresso
+                progressBar.style.width = "0%";
+                downloadButton.disabled = false;
+                spinner.style.display = 'none';
                 return;
             }
-
+            
+            let progress = 0;
+            let progressInterval = setInterval(() => {
+                if (progress < 90) {
+                    progress += 0.2;
+                    progressBar.style.width = `${progress}%`;
+                }
+            }, 10);
+            
             try {
-                // Envia a requisição ao servidor para iniciar o download
-                downloadInProgress = true;
-                downloadButton.disabled = true;
-                statusElement.textContent = "Solicitando download ao servidor...";
-
                 const response = await fetch("/download", {
                     method: "POST",
                     body: formData,
                 });
 
                 if (!response.ok) {
-                    throw new Error("Erro ao iniciar o download. Verifique a URL e tente novamente.");
+                    throw new Error("Erro ao tentar baixar o arquivo. Verifique o servidor.");
                 }
 
                 const data = await response.json();
-                if (data.status === "iniciado") {
-                    statusElement.textContent = "Download iniciado com sucesso!";
+
+                if (!data.success) {
+                    throw new Error("Erro ao processar o download.");
                 }
+
+                socket.emit("startDownload", { url: urlInput });
+
             } catch (error) {
-                statusElement.textContent = `Erro: ${error.message}`;
-                console.error("Erro:", error);
-                downloadInProgress = false;
+                progressBar.style.width = "0%"; 
+                statusElement.textContent = `${error.message}`;
                 downloadButton.disabled = false;
+                spinner.style.display = 'none';
+                clearInterval(progressInterval);
             }
         });
-
-        function startProgressBar() {
-            let progress = 0;
-            const interval = setInterval(() => {
-                if (progress < 90) {
-                    progress += 0.3;
-                    progressBar.style.width = `${progress}%`;
-                } else {
-                    clearInterval(interval);
-                }
-            }, 100);
-        }
-
-        function completeProgressBar(title) {
-            progressBar.style.width = "100%";
-            statusElement.textContent = `${title} baixada com sucesso! 🎉`;
-
-            // Adiciona o título na lista de downloads
-            const musicItem = document.createElement("p");
-            musicItem.textContent = title;
-            downloadsList.prepend(musicItem);
-
-            // Libera o botão de download
-            downloadInProgress = false;
-            downloadButton.disabled = false;
-        }
     </script>
 </body>
 </html>
