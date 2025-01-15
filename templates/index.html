@@ -50,9 +50,11 @@
             <form id="download-form">
                 <label for="url">Insira a URL do Vídeo ou Playlist:</label>
                 <input type="text" id="url" name="url" placeholder="Digite a URL aqui" required>
-
                 <label for="format">Formato</label>
-                <input id="format" name="format" value="MP3" readonly>
+                <select id="format" name="format">
+                    <option value="MP3">MP3</option>
+                    <option value="MP4">MP4</option>
+                </select>
 
                 <button id="download-btn" type="submit">Download</button>
                 <div class="spinner" id="spinner"></div>
