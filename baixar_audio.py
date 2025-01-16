@@ -1,7 +1,5 @@
 import os
 from yt_dlp import YoutubeDL
-from mutagen.mp3 import MP3
-from mutagen.id3 import ID3, TIT2, TPE1, TALB, TDRC
 import platform
 import time
 
@@ -14,7 +12,7 @@ def get_default_download_folder():
         return os.path.join(home, "Downloads")
 
 def download_audio_with_progress(url, format="mp3", progress_callback=None):
-    """Baixa o áudio com suporte a atualizações de progresso e adiciona metadados."""
+    """Baixa o áudio com suporte a atualizações de progresso."""
     download_folder = get_default_download_folder()
 
     ydl_opts = {
@@ -49,27 +47,11 @@ def download_audio_with_progress(url, format="mp3", progress_callback=None):
     with YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
         title = info.get("title", "Desconhecido")
-        artist = info.get("uploader", "Desconhecido")
         output_file = os.path.join(download_folder, f"{title}.mp3")
 
-        add_metadata(output_file, title, artist)
         set_creation_time(output_file)  # Define a data de criação corretamente
 
         return title
-
-def add_metadata(file_path, title, artist):
-    """Adiciona metadados ID3 ao arquivo MP3 baixado."""
-    try:
-        audio = MP3(file_path, ID3=ID3)
-        audio.add_tags()
-    except Exception:
-        pass  # Ignorar se as tags já existirem
-
-    audio.tags.add(TIT2(encoding=3, text=title))  # Título
-    audio.tags.add(TPE1(encoding=3, text=artist))  # Artista
-    audio.tags.add(TALB(encoding=3, text="Desconhecido"))  # Álbum
-    audio.tags.add(TDRC(encoding=3, text="2025"))  # Ano
-    audio.save()
 
 def set_creation_time(file_path):
     """Altera a data de criação, modificação e acesso do arquivo."""

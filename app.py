@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, jsonify
 from flask_socketio import SocketIO, emit
-import os
 from baixar_audio import download_audio_with_progress
 
 app = Flask(__name__)
