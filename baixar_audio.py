@@ -12,11 +12,11 @@ def get_default_download_folder():
         return os.path.join(home, "Downloads")
 
 def download_audio_with_progress(url, format="mp3", progress_callback=None):
-    """Baixa o áudio com suporte a atualizações de progresso."""
+    """Baixa o áudio ou playlist com suporte a atualizações de progresso."""
     download_folder = get_default_download_folder()
 
     ydl_opts = {
-        "format": "bestaudio/best",  # Baixar melhor áudio
+        "format": "bestaudio/best",
         "outtmpl": os.path.join(download_folder, "%(title)s.%(ext)s"),
         "progress_hooks": [
             lambda d: (
@@ -37,21 +37,35 @@ def download_audio_with_progress(url, format="mp3", progress_callback=None):
         ],
         "postprocessors": [
             {
-                "key": "FFmpegExtractAudio",  # Converte para MP3
+                "key": "FFmpegExtractAudio",
                 "preferredcodec": "mp3",
                 "preferredquality": "192",
             }
         ],
+        "noplaylist": False,  # Permitir download de playlists
     }
 
     with YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
-        title = info.get("title", "Desconhecido")
-        output_file = os.path.join(download_folder, f"{title}.mp3")
+        
+        # Caso seja uma playlist, info['entries'] conterá uma lista de músicas
+        if "entries" in info:
+            titles = []
+            for entry in info["entries"]:
+                title = entry.get("title", "Desconhecido")
+                output_file = os.path.join(download_folder, f"{title}.{format}")
+                if os.path.exists(output_file):
+                    set_creation_time(output_file)
+                titles.append(title)
+            return ", ".join(titles)  # Retornar os títulos concatenados
+        else:
+            # Caso seja um vídeo único
+            title = info.get("title", "Desconhecido")
+            output_file = os.path.join(download_folder, f"{title}.{format}")
+            if os.path.exists(output_file):
+                set_creation_time(output_file)
+            return title
 
-        set_creation_time(output_file)  # Define a data de criação corretamente
-
-        return title
 
 def set_creation_time(file_path):
     """Altera a data de criação, modificação e acesso do arquivo."""
