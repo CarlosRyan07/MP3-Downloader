@@ -1,137 +1,254 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Downloader de Áudio</title>
-    <link rel="stylesheet" href="/static/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Downloader de Áudio</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <!-- Incluindo a biblioteca Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
-    <header class="header">
-        <h1>Downloader de Áudio</h1>
-        <p>Baixe música ou playlists inteiras de forma rápida e fácil.</p>
-    </header>
-    <main class="container">
-        <section class="download-section">
-            <form id="download-form">
-                <label for="url">Insira a URL do Vídeo ou Playlist:</label>
-                <input type="text" id="url" name="url" placeholder="Digite a URL aqui" required>
-                <label for="format">Formato</label>
-                <input id="format" name="format" value="MP3" readonly>
-                <button id="download-btn" type="submit">Download</button>
-                <div class="spinner" id="spinner"></div>
-            </form>
-        </section>
-        <section class="status-section">
-            <h2>Downloads Realizados:</h2>
-            <p id="status">Não há download em andamento.</p>
-            <div id="progress-bar">
-                <div id="progress"></div>
-            </div>
-            <div id="downloads-list"></div>
-        </section>
-    </main>
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-    <script>
-        const form = document.getElementById("download-form");
-        const statusElement = document.getElementById("status");
-        const progressBar = document.getElementById("progress");
-        const downloadsList = document.getElementById("downloads-list");
-        const downloadButton = document.getElementById("download-btn");
+  <header class="header">
+    <h1>Downloader de Áudio</h1>
+    <p>Baixe música ou playlists inteiras de forma rápida e fácil.</p>
+    <button id="theme-toggle">Alternar Tema</button>
+  </header>
+  <main class="container">
+    <section class="download-section">
+      <form id="download-form">
+        <label for="url">Insira a URL do Vídeo ou Playlist:</label>
+        <input type="text" id="url" name="url" placeholder="Digite a URL aqui" required>
+        <label for="format">Formato</label>
+        <input id="format" name="format" value="MP3" readonly>
+        <button id="download-btn" type="submit">Download</button>
+        <div class="spinner" id="spinner"></div>
+      </form>
+    </section>
+    
+    <!-- Seção para informações da música - Oculta por padrão -->
+    <section class="info-section" id="info-section" style="display: none;">
+      <h2>Informações da Música</h2>
+      <p id="music-info">Nenhuma informação disponível.</p>
+      <img id="thumbnail" src="" alt="" style="max-width: 80%; height: auto;">
+    </section>
 
-        const socket = io();
-        let progressInterval;
+    <section class="status-section">
+      <h2>Downloads Realizados:</h2>
+      <p id="status">Não há download em andamento.</p>
+      <div id="progress-bar">
+        <div id="progress"></div>
+      </div>
+      <div id="downloads-list"></div>
+    </section>
+  </main>
 
-        function startFakeProgress() {
-            let progress = 0;
-            progressBar.style.transition = 'width 0.5s ease-out';
-            
-            if (progressInterval) clearInterval(progressInterval);
-            
-            progressInterval = setInterval(() => {
-                if (progress < 90) {
-                    if (progress < 30) {
-                        progress += 0.8;
-                    } else if (progress < 60) {
-                        progress += 0.5;
-                    } else {
-                        progress += 0.2;
-                    }
-                    progressBar.style.width = `${progress}%`;
-                    statusElement.textContent = "Baixando...";
-                }
-            }, 100);
+  <!-- Incluindo o socket.io -->
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <script>
+    const form = document.getElementById("download-form");
+    const statusElement = document.getElementById("status");
+    const progressBar = document.getElementById("progress");
+    const downloadsList = document.getElementById("downloads-list");
+    const downloadButton = document.getElementById("download-btn");
+    const urlInput = document.getElementById("url");
+    const musicInfo = document.getElementById("music-info");
+    const thumbnail = document.getElementById("thumbnail");
+    const themeToggle = document.getElementById("theme-toggle");
+    const infoSection = document.getElementById("info-section");
+
+    const socket = io();
+    let progressInterval;
+    let startTime;
+
+    /* Configurações e funções para a animação de confetes */
+    var count = 200;
+    var confettiDefaults = {
+      origin: { y: 0.7 }
+    };
+
+    function fire(particleRatio, opts) {
+      confetti({
+        ...confettiDefaults,
+        ...opts,
+        particleCount: Math.floor(count * particleRatio)
+      });
+    }
+
+    function fireConfetti() {
+      fire(0.25, {
+        spread: 26,
+        startVelocity: 55,
+      });
+      fire(0.2, {
+        spread: 60,
+      });
+      fire(0.35, {
+        spread: 100,
+        decay: 0.91,
+        scalar: 0.8
+      });
+      fire(0.1, {
+        spread: 120,
+        startVelocity: 25,
+        decay: 0.92,
+        scalar: 1.2
+      });
+      fire(0.1, {
+        spread: 120,
+        startVelocity: 45,
+      });
+    }
+
+    // Função para alternar tema (claro/escuro)
+    themeToggle.addEventListener("click", () => {
+      document.body.classList.toggle("light-theme");
+      const isLightTheme = document.body.classList.contains("light-theme");
+      localStorage.setItem("theme", isLightTheme ? "light" : "dark");
+    });
+
+    // Verifica o tema salvo ao carregar a página
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "light") {
+      document.body.classList.add("light-theme");
+    }
+
+    // Função para iniciar a barra de progresso (exemplo "fake")
+    function startFakeProgress() {
+      let progress = 0;
+      progressBar.style.transition = 'width 0.5s ease-out';
+      if (progressInterval) clearInterval(progressInterval);
+      progressInterval = setInterval(() => {
+        if (progress < 90) {
+          if (progress < 30) progress += 0.8;
+          else if (progress < 60) progress += 0.5;
+          else progress += 0.2;
+          progressBar.style.width = `${progress}%`;
+          statusElement.textContent = "Baixando...";
         }
+      }, 100);
+    }
 
-        // Função para adicionar música à lista
-        function addMusicToList(title, isSuccess = true) {
-            const musicItem = document.createElement("p");
-            musicItem.textContent = isSuccess ? `${title} baixada com sucesso! 🎉` : title;
-            downloadsList.prepend(musicItem);
+    // Função para adicionar música à lista de downloads
+    function addMusicToList(title, isSuccess = true) {
+      const musicItem = document.createElement("p");
+      musicItem.textContent = isSuccess ? `${title} baixada com sucesso! 🎉` : title;
+      downloadsList.prepend(musicItem);
+    }
+
+    // Atualização do progresso via SocketIO
+    socket.on("progress", (data) => {
+      if (data.message.includes("concluído")) {
+        addMusicToList(data.title);
+        if (progressInterval) {
+          clearInterval(progressInterval);
+          progressBar.style.transition = 'width 0.3s ease-out';
+          progressBar.style.width = "100%";
+          statusElement.textContent = `Download concluído! 🎉`;
+          downloadButton.disabled = false;
+          startTime = null; // reseta o timer
+          try {
+            fireConfetti();
+          } catch (e) {
+            console.error("Erro ao disparar os confetes:", e);
+          }
         }
+      } else {
+        if (!startTime) startTime = Date.now();
+        const elapsedTime = (Date.now() - startTime) / 1000; // em segundos
+        const downloaded = data.downloaded_bytes || 0;
+        const total = data.total_bytes || 1;
+        const remainingBytes = total - downloaded;
+        const downloadSpeed = downloaded / elapsedTime; // bytes por segundo
+        const remainingTime = downloadSpeed > 0 ? remainingBytes / downloadSpeed : 0;
+        const minutes = Math.floor(remainingTime / 60);
+        const seconds = Math.floor(remainingTime % 60);
+        progressBar.style.width = `${data.progress}%`;
+        statusElement.textContent = `Baixando: ${data.title} - Tempo restante: ${minutes}m ${seconds}s`;
+      }
+    });
 
-        socket.on("progress", (data) => {
-            if (data.message.includes("concluído")) {
-                // Atualiza a lista de downloads assim que cada música termina
-                addMusicToList(data.title);
-                
-                // Se for a última música, limpa o intervalo e completa a barra
-                if (progressInterval) {
-                    clearInterval(progressInterval);
-                    progressBar.style.transition = 'width 0.3s ease-out';
-                    progressBar.style.width = "100%";
-                    statusElement.textContent = `Download concluído! 🎉`;
-                    downloadButton.disabled = false;
-                }
-            } else {
-                statusElement.textContent = `Baixando: ${data.title}`;
-            }
+    // Buscar informações do vídeo assim que a URL for inserida
+    urlInput.addEventListener("input", async () => {
+      const url = urlInput.value;
+      if (url.startsWith("http")) {
+        // Exibe a seção de informações e mostra mensagem de carregamento
+        infoSection.style.display = "block";
+        musicInfo.textContent = "Carregando informações...";
+        thumbnail.src = "";
+
+        try {
+          const response = await fetch("/get-info", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url })
+          });
+          const data = await response.json();
+          if (data.success) {
+            musicInfo.innerHTML = `
+              <strong>Título:</strong> ${data.title}<br>
+              <strong>Duração:</strong> ${data.duration} segundos<br>
+              <strong>Canal:</strong> ${data.channel}<br>
+              <strong>Data:</strong> ${data.upload_date}<br>
+            `;
+            thumbnail.src = data.thumbnail;
+          } else {
+            musicInfo.textContent = "Erro ao buscar informações.";
+            thumbnail.src = "";
+          }
+        } catch (error) {
+          musicInfo.textContent = "Erro ao buscar informações.";
+          thumbnail.src = "";
+        }
+      } else {
+        // Oculta a seção se a URL não for válida
+        infoSection.style.display = "none";
+        musicInfo.textContent = "Nenhuma informação disponível.";
+        thumbnail.src = "";
+      }
+    });
+
+    // Evento do formulário de download
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      statusElement.textContent = "Iniciando download...";
+      progressBar.style.width = "0%";
+      downloadButton.disabled = true;
+      downloadsList.innerHTML = '';
+
+      // Oculta o bloco de informações da música ao iniciar o download
+      infoSection.style.display = "none";
+
+      const formData = new FormData(form);
+      const urlValue = urlInput.value;
+      if (!urlValue.startsWith("http") || urlValue.trim() === "") {
+        statusElement.textContent = "URL inválida. Por favor, insira uma URL válida.";
+        progressBar.style.width = "0%";
+        downloadButton.disabled = false;
+        return;
+      }
+
+      startFakeProgress();
+
+      try {
+        const response = await fetch("/download", {
+          method: "POST",
+          body: formData,
         });
-
-        form.addEventListener("submit", async (event) => {
-            event.preventDefault();
-            statusElement.textContent = "Iniciando download...";
-            progressBar.style.width = "0%";
-            downloadButton.disabled = true;
-            
-            // Limpa a lista de downloads anterior
-            downloadsList.innerHTML = '';
-
-            const formData = new FormData(form);
-            const urlInput = document.getElementById("url").value;
-
-            if (!urlInput.startsWith("http") || urlInput.trim() === "") {
-                statusElement.textContent = "URL inválida. Por favor, insira uma URL válida.";
-                progressBar.style.width = "0%";
-                downloadButton.disabled = false;
-                return;
-            }
-
-            startFakeProgress();
-
-            try {
-                const response = await fetch("/download", {
-                    method: "POST",
-                    body: formData,
-                });
-
-                if (!response.ok) {
-                    throw new Error("Erro ao tentar baixar o arquivo. Verifique o servidor.");
-                }
-
-                const data = await response.json();
-
-                if (!data.success) {
-                    throw new Error("Erro ao processar o download.");
-                }
-
-            } catch (error) {
-                if (progressInterval) clearInterval(progressInterval);
-                progressBar.style.width = "0%";
-                statusElement.textContent = `${error.message}`;
-                downloadButton.disabled = false;
-            }
-        });
-    </script>
+        if (!response.ok) {
+          throw new Error("Erro ao tentar baixar o arquivo. Verifique o servidor.");
+        }
+        const data = await response.json();
+        if (!data.success) {
+          throw new Error("Erro ao processar o download.");
+        }
+      } catch (error) {
+        if (progressInterval) clearInterval(progressInterval);
+        progressBar.style.width = "0%";
+        statusElement.textContent = `${error.message}`;
+        downloadButton.disabled = false;
+      }
+    });
+  </script>
 </body>
 </html>
