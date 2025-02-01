@@ -19,6 +19,11 @@ def download():
             socketio.emit("progress", {"progress": progress, "message": message, "title": title})
 
         title = download_audio_with_progress(url, format=format, progress_callback=progress_callback)
+        
+        # Se for uma playlist, pode retornar múltiplos títulos
+        if isinstance(title, list):
+            return jsonify({"success": True, "titles": title})
+        
         return jsonify({"success": True, "title": title})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})

@@ -20,20 +20,20 @@ header h1 {
 
 header p {
     color: limegreen;
-    margin: 10;
+    margin: 10px;
     font-size: 1.2em;
 }
 
 .container {
     display: flex;
-    flex-direction: column; /* Layout em coluna */
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     padding: 20px;
     gap: 20px;
 }
 
-.download-section, .status-section  {
+.download-section, .status-section {
     background-color: #ccc;
     color: #000;
     padding: 20px;
@@ -41,7 +41,6 @@ header p {
     width: 100%;
     max-width: 600px;
 }
-
 
 form label {
     display: block;
@@ -76,23 +75,25 @@ form button:hover {
 
 #progress-bar {
     width: 100%;
+    background-color: #f3f3f3;
     height: 20px;
-    background-color: #eee;
     margin-top: 10px;
     border-radius: 5px;
+    overflow: hidden;
 }
 
 #progress {
-    width: 0;
     height: 100%;
-    background-color: limegreen;
+    width: 0;
+    background-color: #28a745;
+    transition: width 0.3s ease-out;
     border-radius: 5px;
 }
 
 /* Estilo para os títulos das músicas baixadas */
 #music-title {
-    font-size: 1em; /* Tamanho reduzido */
-    color: black; /* Cor preta para o título */
+    font-size: 1em;
+    color: black;
     margin-top: 10px;
 }
 
@@ -104,6 +105,44 @@ form button:hover {
 
 /* Quando não há download, exibe uma mensagem */
 #status {
-    color: #000; /* Cor preta */
+    color: #000;
     font-size: 1.2em;
+}
+
+/* Estilos do botão de download */
+#download-btn:disabled {
+    background-color: #119803;
+    color: #e3e1e1;
+    cursor: not-allowed;
+}
+
+#download-btn {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+#download-btn:hover:enabled {
+    background-color: #218838;
+}
+
+/* Spinner de carregamento */
+.spinner {
+    display: none;
+    width: 20px;
+    height: 20px;
+    margin-left: 10px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #28a745;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }

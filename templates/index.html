@@ -5,40 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Downloader de Áudio</title>
     <link rel="stylesheet" href="/static/style.css">
-    <style>
-        #download-btn:disabled {
-            background-color: #119803;
-            color: #e3e1e1;
-            cursor: not-allowed;
-        }
-
-        #download-btn {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            border-radius: 5px;
-        }
-
-        #download-btn:hover:enabled {
-            background-color: #218838;
-        }
-
-        #progress-bar {
-            width: 100%;
-            background-color: #f3f3f3;
-            height: 20px;
-            margin-top: 10px;
-        }
-
-        #progress {
-            height: 100%;
-            width: 0;
-            background-color: #28a745;
-        }
-    </style>
 </head>
 <body>
     <header class="header">
@@ -52,7 +18,6 @@
                 <input type="text" id="url" name="url" placeholder="Digite a URL aqui" required>
                 <label for="format">Formato</label>
                 <input id="format" name="format" value="MP3" readonly>
-
                 <button id="download-btn" type="submit">Download</button>
                 <div class="spinner" id="spinner"></div>
             </form>
@@ -73,34 +38,64 @@
         const progressBar = document.getElementById("progress");
         const downloadsList = document.getElementById("downloads-list");
         const downloadButton = document.getElementById("download-btn");
-        const spinner = document.getElementById("spinner");
 
         const socket = io();
+        let progressInterval;
+
+        function startFakeProgress() {
+            let progress = 0;
+            progressBar.style.transition = 'width 0.5s ease-out';
+            
+            if (progressInterval) clearInterval(progressInterval);
+            
+            progressInterval = setInterval(() => {
+                if (progress < 90) {
+                    if (progress < 30) {
+                        progress += 0.8;
+                    } else if (progress < 60) {
+                        progress += 0.5;
+                    } else {
+                        progress += 0.2;
+                    }
+                    progressBar.style.width = `${progress}%`;
+                    statusElement.textContent = "Baixando...";
+                }
+            }, 100);
+        }
+
+        // Função para adicionar música à lista
+        function addMusicToList(title, isSuccess = true) {
+            const musicItem = document.createElement("p");
+            musicItem.textContent = isSuccess ? `${title} baixada com sucesso! 🎉` : title;
+            downloadsList.prepend(musicItem);
+        }
 
         socket.on("progress", (data) => {
             if (data.message.includes("concluído")) {
-                progressBar.style.transition = 'width 1s ease-out'; 
-                progressBar.style.width = "100%"; 
-                statusElement.textContent = `${data.title} baixada com sucesso! 🎉`;
-
-                if (!Array.from(downloadsList.children).some((item) => item.textContent === data.title)) {
-                    const musicItem = document.createElement("p");
-                    musicItem.textContent = data.title;
-                    downloadsList.prepend(musicItem);
+                // Atualiza a lista de downloads assim que cada música termina
+                addMusicToList(data.title);
+                
+                // Se for a última música, limpa o intervalo e completa a barra
+                if (progressInterval) {
+                    clearInterval(progressInterval);
+                    progressBar.style.transition = 'width 0.3s ease-out';
+                    progressBar.style.width = "100%";
+                    statusElement.textContent = `Download concluído! 🎉`;
+                    downloadButton.disabled = false;
                 }
-
-                downloadButton.disabled = false;
-                spinner.style.display = 'none';
+            } else {
+                statusElement.textContent = `Baixando: ${data.title}`;
             }
         });
 
         form.addEventListener("submit", async (event) => {
             event.preventDefault();
-            statusElement.textContent = "Baixando informações da música...";
-            progressBar.style.transition = 'none';
+            statusElement.textContent = "Iniciando download...";
             progressBar.style.width = "0%";
             downloadButton.disabled = true;
-            spinner.style.display = 'inline-block';
+            
+            // Limpa a lista de downloads anterior
+            downloadsList.innerHTML = '';
 
             const formData = new FormData(form);
             const urlInput = document.getElementById("url").value;
@@ -109,18 +104,11 @@
                 statusElement.textContent = "URL inválida. Por favor, insira uma URL válida.";
                 progressBar.style.width = "0%";
                 downloadButton.disabled = false;
-                spinner.style.display = 'none';
                 return;
             }
-            
-            let progress = 0;
-            let progressInterval = setInterval(() => {
-                if (progress < 90) {
-                    progress += 0.2;
-                    progressBar.style.width = `${progress}%`;
-                }
-            }, 10);
-            
+
+            startFakeProgress();
+
             try {
                 const response = await fetch("/download", {
                     method: "POST",
@@ -137,14 +125,11 @@
                     throw new Error("Erro ao processar o download.");
                 }
 
-                socket.emit("startDownload", { url: urlInput });
-
             } catch (error) {
-                progressBar.style.width = "0%"; 
+                if (progressInterval) clearInterval(progressInterval);
+                progressBar.style.width = "0%";
                 statusElement.textContent = `${error.message}`;
                 downloadButton.disabled = false;
-                spinner.style.display = 'none';
-                clearInterval(progressInterval);
             }
         });
     </script>

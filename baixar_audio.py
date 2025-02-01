@@ -47,7 +47,7 @@ def download_audio_with_progress(url, format="mp3", progress_callback=None):
 
     with YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
-        
+
         # Caso seja uma playlist, info['entries'] conterá uma lista de músicas
         if "entries" in info:
             titles = []
@@ -65,7 +65,6 @@ def download_audio_with_progress(url, format="mp3", progress_callback=None):
             if os.path.exists(output_file):
                 set_creation_time(output_file)
             return title
-
 
 def set_creation_time(file_path):
     """Altera a data de criação, modificação e acesso do arquivo."""
