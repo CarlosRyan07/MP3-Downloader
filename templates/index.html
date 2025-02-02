@@ -4,48 +4,202 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Downloader de Áudio</title>
+  
+  <!-- Link para seu CSS -->
   <link rel="stylesheet" href="/static/style.css">
-  <!-- Incluindo a biblioteca Canvas Confetti -->
+  
+  <!-- Estilos específicos para a tela de splash -->
+  <style>
+    /* Tela de splash que cobre toda a janela */
+    #splash {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #393c3a; /* verde */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    /* Ajustes na animação "Hi!" */
+    h1.ml8 {
+      font-weight: 900;
+      font-size: 4.5em;
+      color: #fff; /* Você pode alterar para outra cor se preferir */
+      width: 3em;
+      height: 3em;
+      position: relative;
+    }
+    .ml8 .letters-container {
+      position: absolute;
+      left: 0;
+      right: 0;
+      margin: auto;
+      top: 0;
+      bottom: 0;
+      height: 1em;
+    }
+    .ml8 .letters {
+      position: relative;
+      z-index: 2;
+      display: inline-block;
+      line-height: 0.7em;
+      right: -0.12em;
+      top: -0.2em;
+    }
+    .ml8 .bang {
+      font-size: 1.4em;
+      top: auto;
+      left: -0.06em;
+    }
+    .ml8 .circle {
+      position: absolute;
+      left: 0;
+      right: 0;
+      margin: auto;
+      top: 0;
+      bottom: 0;
+    }
+    .ml8 .circle-white {
+      width: 3em;
+      height: 3em;
+      border: 2px dashed white;
+      border-radius: 2em;
+    }
+    .ml8 .circle-dark {
+      width: 2.2em;
+      height: 2.2em;
+      background-color: #09b30f;
+      border-radius: 3em;
+      z-index: 1;
+    }
+    .ml8 .circle-dark-dashed {
+      border-radius: 2.4em;
+      background-color: transparent;
+      border: 2px dashed #10b015;
+      width: 2.3em;
+      height: 2.3em;
+    }
+  </style>
+  
+  <!-- Incluindo a biblioteca Anime.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/2.0.2/anime.min.js"></script>
+  <!-- Incluindo a biblioteca Canvas Confetti (para outras animações, se necessário) -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
-  <header class="header">
-    <h1>Downloader de Áudio</h1>
-    <p>Baixe música ou playlists inteiras de forma rápida e fácil.</p>
-    <button id="theme-toggle">Alternar Tema</button>
-  </header>
-  <main class="container">
-    <section class="download-section">
-      <form id="download-form">
-        <label for="url">Insira a URL do Vídeo ou Playlist:</label>
-        <input type="text" id="url" name="url" placeholder="Digite a URL aqui" required>
-        <label for="format">Formato</label>
-        <input id="format" name="format" value="MP3" readonly>
-        <button id="download-btn" type="submit">Download</button>
-        <div class="spinner" id="spinner"></div>
-      </form>
-    </section>
-    
-    <!-- Seção para informações da música - Oculta por padrão -->
-    <section class="info-section" id="info-section" style="display: none;">
-      <h2>Informações da Música</h2>
-      <p id="music-info">Nenhuma informação disponível.</p>
-      <img id="thumbnail" src="" alt="" style="max-width: 80%; height: auto;">
-    </section>
-
-    <section class="status-section">
-      <h2>Downloads Realizados:</h2>
-      <p id="status">Não há download em andamento.</p>
-      <div id="progress-bar">
-        <div id="progress"></div>
-      </div>
-      <div id="downloads-list"></div>
-    </section>
-  </main>
-
-  <!-- Incluindo o socket.io -->
+  <!-- Tela de Splash com animação "Hi!" -->
+  <div id="splash">
+    <h1 class="ml8">
+      <span class="letters-container">
+        <span class="letters letters-left">Olá</span>
+        <span class="letters bang">!</span>
+      </span>
+      <span class="circle circle-white"></span>
+      <span class="circle circle-dark"></span>
+      <span class="circle circle-container">
+        <span class="circle circle-dark-dashed"></span>
+      </span>
+    </h1>
+  </div>
+  
+  <!-- Conteúdo principal (inicialmente oculto) -->
+  <div id="mainContent" style="display: none;">
+    <header class="header">
+      <h1>Downloader de Áudio</h1>
+      <p>Baixe música ou playlists inteiras de forma rápida e fácil.</p>
+      <button id="theme-toggle">Alternar Tema</button>
+    </header>
+    <main class="container">
+      <section class="download-section">
+        <form id="download-form">
+          <label for="url">Insira a URL do Vídeo ou Playlist:</label>
+          <input type="text" id="url" name="url" placeholder="Digite a URL aqui" required>
+          <label for="format">Formato</label>
+          <input id="format" name="format" value="MP3" readonly>
+          <button id="download-btn" type="submit">Download</button>
+          <div class="spinner" id="spinner"></div>
+        </form>
+      </section>
+      
+      <!-- Seção para informações da música - Oculta por padrão -->
+      <section class="info-section" id="info-section" style="display: none;">
+        <h2>Informações da Música</h2>
+        <p id="music-info">Nenhuma informação disponível.</p>
+        <img id="thumbnail" src="" alt="" style="max-width: 80%; height: auto;">
+      </section>
+  
+      <section class="status-section">
+        <h2>Downloads Realizados:</h2>
+        <p id="status">Não há download em andamento.</p>
+        <div id="progress-bar">
+          <div id="progress"></div>
+        </div>
+        <div id="downloads-list"></div>
+      </section>
+    </main>
+  </div>
+  
+  <!-- Incluindo o Socket.io -->
   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
   <script>
+    /* Animação de Splash usando Anime.js */
+    anime.timeline({loop: false})
+      .add({
+        targets: '.ml8 .circle-white',
+        scale: [0, 3],
+        opacity: [1, 0],
+        easing: "easeInOutExpo",
+        rotateZ: 360,
+        duration: 1100
+      }).add({
+        targets: '.ml8 .circle-container',
+        scale: [0, 1],
+        duration: 1100,
+        easing: "easeInOutExpo",
+        offset: '-=1000'
+      }).add({
+        targets: '.ml8 .circle-dark',
+        scale: [0, 1],
+        duration: 1100,
+        easing: "easeOutExpo",
+        offset: '-=600'
+      }).add({
+        targets: '.ml8 .letters-left',
+        scale: [0, 1],
+        duration: 1200,
+        offset: '-=550'
+      }).add({
+        targets: '.ml8 .bang',
+        scale: [0, 1],
+        rotateZ: [45, 15],
+        duration: 1200,
+        offset: '-=1000'
+      }).add({
+        targets: '.ml8',
+        opacity: 0,
+        duration: 1000,
+        easing: "easeOutExpo",
+        delay: 1400
+      });
+  
+    anime({
+      targets: '.ml8 .circle-dark-dashed',
+      rotateZ: 360,
+      duration: 8000,
+      easing: "linear",
+      loop: true
+    });
+  
+    // Quando a animação de splash terminar, ocultamos o splash e mostramos o conteúdo principal.
+    setTimeout(() => {
+      document.getElementById('splash').style.display = 'none';
+      document.getElementById('mainContent').style.display = 'block';
+    }, 5000); // Ajuste o tempo conforme necessário (5000ms = 5 segundos)
+  
+    /* --- Código Original do Projeto (Download, socket.io, etc.) --- */
     const form = document.getElementById("download-form");
     const statusElement = document.getElementById("status");
     const progressBar = document.getElementById("progress");
@@ -56,26 +210,26 @@
     const thumbnail = document.getElementById("thumbnail");
     const themeToggle = document.getElementById("theme-toggle");
     const infoSection = document.getElementById("info-section");
-
+  
     const socket = io();
     let progressInterval;
     let startTime;
 
-    /* Configurações e funções para a animação de confetes */
+    // Função para disparar confetes
     var count = 200;
-    var confettiDefaults = {
+    var defaults = {
       origin: { y: 0.7 }
     };
 
     function fire(particleRatio, opts) {
       confetti({
-        ...confettiDefaults,
+        ...defaults,
         ...opts,
         particleCount: Math.floor(count * particleRatio)
       });
     }
 
-    function fireConfetti() {
+    function triggerConfetti() {
       fire(0.25, {
         spread: 26,
         startVelocity: 55,
@@ -99,20 +253,20 @@
         startVelocity: 45,
       });
     }
-
+  
     // Função para alternar tema (claro/escuro)
     themeToggle.addEventListener("click", () => {
       document.body.classList.toggle("light-theme");
       const isLightTheme = document.body.classList.contains("light-theme");
       localStorage.setItem("theme", isLightTheme ? "light" : "dark");
     });
-
+  
     // Verifica o tema salvo ao carregar a página
     const savedTheme = localStorage.getItem("theme");
     if (savedTheme === "light") {
       document.body.classList.add("light-theme");
     }
-
+  
     // Função para iniciar a barra de progresso (exemplo "fake")
     function startFakeProgress() {
       let progress = 0;
@@ -128,14 +282,14 @@
         }
       }, 100);
     }
-
+  
     // Função para adicionar música à lista de downloads
     function addMusicToList(title, isSuccess = true) {
       const musicItem = document.createElement("p");
       musicItem.textContent = isSuccess ? `${title} baixada com sucesso! 🎉` : title;
       downloadsList.prepend(musicItem);
     }
-
+  
     // Atualização do progresso via SocketIO
     socket.on("progress", (data) => {
       if (data.message.includes("concluído")) {
@@ -147,11 +301,7 @@
           statusElement.textContent = `Download concluído! 🎉`;
           downloadButton.disabled = false;
           startTime = null; // reseta o timer
-          try {
-            fireConfetti();
-          } catch (e) {
-            console.error("Erro ao disparar os confetes:", e);
-          }
+          triggerConfetti(); // Dispara confetes ao concluir o download
         }
       } else {
         if (!startTime) startTime = Date.now();
@@ -167,7 +317,7 @@
         statusElement.textContent = `Baixando: ${data.title} - Tempo restante: ${minutes}m ${seconds}s`;
       }
     });
-
+  
     // Buscar informações do vídeo assim que a URL for inserida
     urlInput.addEventListener("input", async () => {
       const url = urlInput.value;
@@ -176,7 +326,7 @@
         infoSection.style.display = "block";
         musicInfo.textContent = "Carregando informações...";
         thumbnail.src = "";
-
+  
         try {
           const response = await fetch("/get-info", {
             method: "POST",
@@ -207,7 +357,7 @@
         thumbnail.src = "";
       }
     });
-
+  
     // Evento do formulário de download
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -215,10 +365,10 @@
       progressBar.style.width = "0%";
       downloadButton.disabled = true;
       downloadsList.innerHTML = '';
-
+  
       // Oculta o bloco de informações da música ao iniciar o download
       infoSection.style.display = "none";
-
+  
       const formData = new FormData(form);
       const urlValue = urlInput.value;
       if (!urlValue.startsWith("http") || urlValue.trim() === "") {
@@ -227,9 +377,9 @@
         downloadButton.disabled = false;
         return;
       }
-
+  
       startFakeProgress();
-
+  
       try {
         const response = await fetch("/download", {
           method: "POST",
