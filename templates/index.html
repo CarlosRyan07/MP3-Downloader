@@ -5,29 +5,216 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Downloader de Áudio</title>
   
-  <!-- Link para seu CSS -->
-  <link rel="stylesheet" href="/static/style.css">
-  
-  <!-- Estilos específicos para a tela de splash -->
   <style>
-    /* Tela de splash que cobre toda a janela */
+    /* Reset básico */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #333;
+      color: #fff;
+      text-align: center;
+    }
+    
+    /* Tema escuro (padrão) */
+    header.header {
+      background-color: #444;
+      padding: 20px 0;
+    }
+    
+    header h1 {
+      color: limegreen;
+      margin: 0;
+    }
+    
+    header p {
+      color: limegreen;
+      margin: 10px;
+      font-size: 1.2em;
+    }
+    
+    /* Container principal */
+    .container {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      gap: 20px;
+    }
+    
+    .download-section, .status-section, .info-section {
+      background-color: #c3c2c2;
+      color: #000;
+      padding: 20px;
+      border-radius: 10px;
+      width: 100%;
+      max-width: 600px;
+    }
+    
+    form label {
+      display: block;
+      margin-top: 10px;
+      text-align: left;
+    }
+    
+    form input,
+    form select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      box-sizing: border-box;
+    }
+    
+    form button {
+      background-color: limegreen;
+      color: #fff;
+      border: none;
+      padding: 10px;
+      margin-top: 10px;
+      cursor: pointer;
+      font-size: 1em;
+      border-radius: 5px;
+    }
+    
+    form button:hover {
+      background-color: #1be600;
+    }
+    
+    #progress-bar {
+      width: 100%;
+      background-color: #f3f3f3;
+      height: 20px;
+      margin-top: 10px;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    
+    #progress {
+      height: 100%;
+      width: 0;
+      background-color: #00c02d;
+      transition: width 0.3s ease-out;
+      border-radius: 5px;
+    }
+    
+    /* Estilo para os títulos das músicas baixadas */
+    #downloads-list p {
+      font-size: 1em;
+      color: black;
+      margin-top: 10px;
+    }
+    
+    /* Status de download */
+    #status {
+      color: #000;
+      font-size: 1.2em;
+    }
+    
+    /* Estilo para o botão de download desabilitado */
+    #download-btn:disabled {
+      background-color: #119803;
+      color: #e3e1e1;
+      cursor: not-allowed;
+    }
+    
+    /* ----- Botão de download com efeito Glow-on-Hover ----- */
+    #download-btn.glow-on-hover {
+      background-color: #00d632;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 5px;
+      position: relative;
+      z-index: 0;
+      transition: color 0.3s ease-in-out;
+    }
+    
+    /* Efeito de brilho: pseudo-elemento antes do botão */
+    #download-btn.glow-on-hover:before {
+      content: '';
+      background: linear-gradient(45deg, 
+        #37ff00, 
+        #b2f8ae, 
+        #44ef01);
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      background-size: 400%;
+      z-index: -1;
+      filter: blur(5px);
+      width: calc(100% + 4px);
+      height: calc(100% + 4px);
+      animation: glowing 20s linear infinite;
+      opacity: 0;
+      transition: opacity 0.3s ease-in-out;
+      border-radius: 5px;
+    }
+    
+    /* Exibe o brilho ao passar o mouse */
+    #download-btn.glow-on-hover:hover:before {
+      opacity: 1;
+    }
+    
+    /* Efeito para clique */
+    #download-btn.glow-on-hover:active {
+      color: #000;
+    }
+    
+    /* Animação do efeito de brilho */
+    @keyframes glowing {
+      0% {
+        background-position: 0 0;
+      }
+      50% {
+        background-position: 400% 0;
+      }
+      100% {
+        background-position: 0 0;
+      }
+    }
+    
+    /* Spinner de carregamento */
+    .spinner {
+      display: none;
+      width: 20px;
+      height: 20px;
+      margin-left: 10px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #28a745;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* Estilos da tela de splash */
     #splash {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
-      background-color: #393c3a; /* verde */
+      background-color: #393c3a;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
       z-index: 9999;
     }
-    /* Ajustes na animação "Hi!" */
+    
+    /* Animação "Hi!" */
     h1.ml8 {
       font-weight: 900;
-      font-size: 4.5em;
-      color: #fff; /* Você pode alterar para outra cor se preferir */
+      font-size: 6em;
+      color: #fff;
       width: 3em;
       height: 3em;
       position: relative;
@@ -42,17 +229,13 @@
       height: 1em;
     }
     .ml8 .letters {
+      font-size: 1.5em;
       position: relative;
       z-index: 2;
       display: inline-block;
       line-height: 0.7em;
-      right: -0.12em;
       top: -0.2em;
-    }
-    .ml8 .bang {
-      font-size: 1.4em;
-      top: auto;
-      left: -0.06em;
+      right: 0.1em;
     }
     .ml8 .circle {
       position: absolute;
@@ -82,20 +265,42 @@
       width: 2.3em;
       height: 2.3em;
     }
+    
+    /* Estilos para a mensagem de boas-vindas (ml6) */
+    .ml6 {
+      position: relative;
+      font-weight: 900;
+      font-size: 3.3em;
+      margin-top: 20px;
+      color: #fff;
+    }
+    
+    .ml6 .text-wrapper {
+      position: relative;
+      display: inline-block;
+      padding-top: 0.2em;
+      padding-right: 0.05em;
+      padding-bottom: 0.1em;
+      overflow: hidden;
+    }
+    
+    .ml6 .letter {
+      display: inline-block;
+      line-height: 1em;
+    }
   </style>
   
   <!-- Incluindo a biblioteca Anime.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/2.0.2/anime.min.js"></script>
-  <!-- Incluindo a biblioteca Canvas Confetti (para outras animações, se necessário) -->
+  <!-- Incluindo a biblioteca Canvas Confetti -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
-  <!-- Tela de Splash com animação "Hi!" -->
+  <!-- Tela de Splash com animação "Hi!" e mensagem de boas-vindas -->
   <div id="splash">
     <h1 class="ml8">
       <span class="letters-container">
-        <span class="letters letters-left">Olá</span>
-        <span class="letters bang">!</span>
+        <span class="letters letters-left">♫</span>
       </span>
       <span class="circle circle-white"></span>
       <span class="circle circle-dark"></span>
@@ -103,14 +308,19 @@
         <span class="circle circle-dark-dashed"></span>
       </span>
     </h1>
+    <!-- Mensagem de boas-vindas animada -->
+    <h1 class="ml6">
+      <span class="text-wrapper">
+        <span class="letters">Olá, seja bem vindo!</span>
+      </span>
+    </h1>
   </div>
   
   <!-- Conteúdo principal (inicialmente oculto) -->
   <div id="mainContent" style="display: none;">
     <header class="header">
-      <h1>Downloader de Áudio</h1>
-      <p>Baixe música ou playlists inteiras de forma rápida e fácil.</p>
-      <button id="theme-toggle">Alternar Tema</button>
+      <h1>MP3 Downloader</h1>
+      <p>Baixe músicas ou playlists inteiras de forma rápida e fácil.</p>
     </header>
     <main class="container">
       <section class="download-section">
@@ -119,7 +329,8 @@
           <input type="text" id="url" name="url" placeholder="Digite a URL aqui" required>
           <label for="format">Formato</label>
           <input id="format" name="format" value="MP3" readonly>
-          <button id="download-btn" type="submit">Download</button>
+          <!-- Botão de download com efeito glow-on-hover -->
+          <button id="download-btn" class="glow-on-hover" type="submit">Download</button>
           <div class="spinner" id="spinner"></div>
         </form>
       </section>
@@ -144,6 +355,7 @@
   
   <!-- Incluindo o Socket.io -->
   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  
   <script>
     /* Animação de Splash usando Anime.js */
     anime.timeline({loop: false})
@@ -172,12 +384,6 @@
         duration: 1200,
         offset: '-=550'
       }).add({
-        targets: '.ml8 .bang',
-        scale: [0, 1],
-        rotateZ: [45, 15],
-        duration: 1200,
-        offset: '-=1000'
-      }).add({
         targets: '.ml8',
         opacity: 0,
         duration: 1000,
@@ -193,11 +399,31 @@
       loop: true
     });
   
+    /* Animação da mensagem de boas-vindas (ml6) */
+    // Wrap every letter in a span
+    var textWrapper = document.querySelector('.ml6 .letters');
+    textWrapper.innerHTML = textWrapper.textContent.replace(/\S/g, "<span class='letter'>$&</span>");
+  
+    anime.timeline({loop: true})
+      .add({
+        targets: '.ml6 .letter',
+        translateY: ["1.1em", 0],
+        translateZ: 0,
+        duration: 750,
+        delay: (el, i) => 130 * i
+      }).add({
+        targets: '.ml6',
+        opacity: 0,
+        duration: 1900,
+        easing: "easeOutExpo",
+        delay: 900
+      });
+  
     // Quando a animação de splash terminar, ocultamos o splash e mostramos o conteúdo principal.
     setTimeout(() => {
       document.getElementById('splash').style.display = 'none';
       document.getElementById('mainContent').style.display = 'block';
-    }, 5000); // Ajuste o tempo conforme necessário (5000ms = 5 segundos)
+    }, 5000);
   
     /* --- Código Original do Projeto (Download, socket.io, etc.) --- */
     const form = document.getElementById("download-form");
@@ -208,19 +434,18 @@
     const urlInput = document.getElementById("url");
     const musicInfo = document.getElementById("music-info");
     const thumbnail = document.getElementById("thumbnail");
-    const themeToggle = document.getElementById("theme-toggle");
     const infoSection = document.getElementById("info-section");
   
     const socket = io();
     let progressInterval;
     let startTime;
-
+  
     // Função para disparar confetes
     var count = 200;
     var defaults = {
       origin: { y: 0.7 }
     };
-
+  
     function fire(particleRatio, opts) {
       confetti({
         ...defaults,
@@ -228,7 +453,7 @@
         particleCount: Math.floor(count * particleRatio)
       });
     }
-
+  
     function triggerConfetti() {
       fire(0.25, {
         spread: 26,
@@ -252,19 +477,6 @@
         spread: 120,
         startVelocity: 45,
       });
-    }
-  
-    // Função para alternar tema (claro/escuro)
-    themeToggle.addEventListener("click", () => {
-      document.body.classList.toggle("light-theme");
-      const isLightTheme = document.body.classList.contains("light-theme");
-      localStorage.setItem("theme", isLightTheme ? "light" : "dark");
-    });
-  
-    // Verifica o tema salvo ao carregar a página
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme === "light") {
-      document.body.classList.add("light-theme");
     }
   
     // Função para iniciar a barra de progresso (exemplo "fake")
@@ -339,7 +551,6 @@
               <strong>Título:</strong> ${data.title}<br>
               <strong>Duração:</strong> ${data.duration} segundos<br>
               <strong>Canal:</strong> ${data.channel}<br>
-              <strong>Data:</strong> ${data.upload_date}<br>
             `;
             thumbnail.src = data.thumbnail;
           } else {

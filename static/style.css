@@ -25,18 +25,6 @@ body {
     font-size: 1.2em;
   }
   
-  /* Botão de toggle de tema */
-  #theme-toggle {
-    background-color: limegreen;
-    color: #fff;
-    border: none;
-    padding: 8px 12px;
-    cursor: pointer;
-    font-size: 0.9em;
-    border-radius: 5px;
-    margin-top: 10px;
-  }
-  
   /* Container principal */
   .container {
     display: flex;
@@ -153,39 +141,5 @@ body {
   @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
-  }
-  
-  /* Tema Claro */
-  body.light-theme {
-    background-color: #d8d8d8;
-    color: #333;
-  }
-  
-  .light-theme .header {
-    background-color: #848484;
-  }
-  
-  .light-theme .download-section,
-  .light-theme .status-section,
-  .light-theme .info-section {
-    background-color: #bfbdbd;
-    color: #333;
-  }
-  
-  .light-theme #progress-bar {
-    background-color: #f0eeee;
-  }
-  
-  .light-theme #progress {
-    background-color: #28a745;
-  }
-  
-  .light-theme #download-btn {
-    background-color: #02c630;
-    color: rgb(255, 251, 251);
-  }
-  
-  .light-theme #download-btn:hover:enabled {
-    background-color: #218838;
   }
   
