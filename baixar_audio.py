@@ -3,11 +3,43 @@ from yt_dlp import YoutubeDL
 import platform
 import time
 import requests  # Para baixar a thumbnail
+from mutagen.easyid3 import EasyID3
+from mutagen.id3 import ID3, APIC
 
 def get_default_download_folder():
     """Retorna a pasta de download padrão do sistema."""
     home = os.path.expanduser("~")
     return os.path.join(home, "Downloads")
+
+def add_metadata(file_path, title, artist="Desconhecido", album="Desconhecido", thumbnail_url=None):
+    """Adiciona metadados ao arquivo de áudio."""
+    try:
+        audio = EasyID3(file_path)
+    except Exception:
+        audio = EasyID3()
+
+    audio['title'] = title
+    audio['artist'] = artist
+    audio['album'] = album
+    audio.save(file_path)
+
+    # Adicionar thumbnail (capa do álbum)
+    if thumbnail_url:
+        try:
+            audio_tags = ID3(file_path)
+            audio_tags.delall('APIC')  # Remove capas existentes
+            response = requests.get(thumbnail_url)
+            if response.status_code == 200:
+                audio_tags.add(APIC(
+                    encoding=3,  # UTF-8
+                    mime='image/jpeg',  # ou 'image/png'
+                    type=3,  # 3 é para capa do álbum
+                    desc='Cover',
+                    data=response.content
+                ))
+                audio_tags.save(file_path)
+        except Exception as e:
+            print(f"Erro ao adicionar thumbnail: {e}")
 
 def set_creation_time(file_path):
     """Altera a data de criação, modificação e acesso do arquivo."""
@@ -84,6 +116,13 @@ def download_audio_with_progress(url, format="mp3", progress_callback=None):
                 output_file = os.path.join(download_folder, f"{title}.{format}")
                 if os.path.exists(output_file):
                     set_creation_time(output_file)
+                    add_metadata(
+                        output_file,
+                        title,
+                        entry.get("artist", "Desconhecido"),
+                        entry.get("album", "Desconhecido"),
+                        entry.get("thumbnail")
+                    )
                 titles.append(title)
             return titles  # Retorna a lista de títulos
         else:
@@ -91,6 +130,13 @@ def download_audio_with_progress(url, format="mp3", progress_callback=None):
             output_file = os.path.join(download_folder, f"{title}.{format}")
             if os.path.exists(output_file):
                 set_creation_time(output_file)
+                add_metadata(
+                    output_file,
+                    title,
+                    info.get("artist", "Desconhecido"),
+                    info.get("album", "Desconhecido"),
+                    info.get("thumbnail")
+                )
             return title
 
 # Função main para teste via terminal (opcional)

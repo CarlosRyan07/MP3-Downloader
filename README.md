@@ -6,6 +6,8 @@
 
 Uma aplicação web moderna para conversão de vídeos e playlists do YouTube em arquivos MP3 de alta qualidade, com monitoramento em tempo real e interface intuitiva.
 
+![Interface Demo](imgs/Apresentacao.gif)
+
 ## ✨ Funcionalidades Principais
 
 ### 🚀 Conversão Avançada
@@ -15,14 +17,12 @@ Uma aplicação web moderna para conversão de vídeos e playlists do YouTube em
 - Suporte a URLs de vídeos e playlists
 
 ### 📊 Progresso em Tempo Real
-- Barra de progresso interativa
-- Estimativa de tempo restante
 - Velocidade de download em tempo real
 - Notificações de conclusão com efeitos de confete
 
 ### 🎨 Interface Moderna
 - Tema escuro com design responsivo
-- Animções fluidas de carregamento
+- Animações fluidas de carregamento
 - Pré-visualização das informações do vídeo
 - Efeitos visuais interativos
 - Compatibilidade com múltiplos navegadores
@@ -56,13 +56,27 @@ python app.py
 
 2. Abra seu navegador e navegue para:
 ```
-http://localhost:5000
+http://127.0.0.1:5000
 ```
 
 3. Insira um URL de vídeo ou playlist no campo de entrada
 4. Clique no botão Download
 5. Aguarde a conclusão do download
 6. Encontre seus arquivos MP3 baixados na pasta Downloads do seu sistema
+
+## Ou no Terminal
+
+Se preferir, você pode rodar o código diretamente no terminal usando o script `baixar_audio.py`:
+
+1. Execute o script com o comando:
+```bash
+python baixar_audio.py 
+```
+
+2. Selecione se você quer baixar uma musica ou uma playlist
+3. Cole o link do respectivo video
+4. Aguarde a conclusão do download
+5. Encontre seus arquivos MP3 baixados na pasta Downloads do seu sistema
 
 ## Estrutura do Projeto
 
