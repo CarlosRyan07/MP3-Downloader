@@ -504,31 +504,42 @@
   
     // Atualização do progresso via SocketIO
     socket.on("progress", (data) => {
-      if (data.message.includes("concluído")) {
+      if (data.finished) {
+        clearInterval(progressInterval);
+        progressBar.style.transition = 'width 0.3s ease-out';
+        progressBar.style.width = "100%";
+        statusElement.textContent = `Download concluído! 🎉`;
+        downloadButton.disabled = false;
+        triggerConfetti();
         addMusicToList(data.title);
-        if (progressInterval) {
+        return;
+      }
+    
+      // Verifica se é o final de um download individual
+      if (data.message && data.message.includes("concluído")) {
+        addMusicToList(data.title);
+        
+        // Se não for parte de uma playlist, finaliza o processo
+        if (!data.isPlaylist) {
           clearInterval(progressInterval);
           progressBar.style.transition = 'width 0.3s ease-out';
           progressBar.style.width = "100%";
           statusElement.textContent = `Download concluído! 🎉`;
           downloadButton.disabled = false;
-          startTime = null; // reseta o timer
-          triggerConfetti(); // Dispara confetes ao concluir o download
+          startTime = null;
+          triggerConfetti();
+        } else {
+          // Se for parte de uma playlist, apenas atualiza o status
+          statusElement.textContent = `Baixando playlist: ${data.title} concluído`;
         }
       } else {
-        if (!startTime) startTime = Date.now();
-        const elapsedTime = (Date.now() - startTime) / 1000; // em segundos
-        const downloaded = data.downloaded_bytes || 0;
-        const total = data.total_bytes || 1;
-        const remainingBytes = total - downloaded;
-        const downloadSpeed = downloaded / elapsedTime; // bytes por segundo
-        const remainingTime = downloadSpeed > 0 ? remainingBytes / downloadSpeed : 0;
-        const minutes = Math.floor(remainingTime / 60);
-        const seconds = Math.floor(remainingTime % 60);
+        // Atualização normal do progresso
         progressBar.style.width = `${data.progress}%`;
-        statusElement.textContent = `Baixando: ${data.title} - Tempo restante: ${minutes}m ${seconds}s`;
+        statusElement.textContent = data.isPlaylist ? 
+          `Baixando playlist: ${data.title}` : 
+          `Baixando: ${data.title}`;
       }
-    });
+    });    
   
     // Buscar informações do vídeo assim que a URL for inserida
     urlInput.addEventListener("input", async () => {

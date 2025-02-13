@@ -65,7 +65,7 @@ def set_creation_time(file_path):
             print("Aviso: pywin32 não está instalado. A data de criação não foi alterada.")
 
 def progress_hook_wrapper(d, progress_callback):
-    """Wrapper para o progress hook, que envia também downloaded_bytes e total_bytes."""
+    """Wrapper para o progress hook que envia também downloaded_bytes e total_bytes."""
     if progress_callback:
         if d["status"] == "downloading":
             total_bytes = d.get("total_bytes") or d.get("total_bytes_estimate", 1)
@@ -76,7 +76,7 @@ def progress_hook_wrapper(d, progress_callback):
                 downloaded_bytes=d.get("downloaded_bytes", 0),
                 total_bytes=total_bytes
             )
-        elif d["status"] == "finished":
+        elif d["status"] in ["finished", "postprocessing"]:
             progress_callback(
                 progress=100,
                 message="Download concluído!",
@@ -103,6 +103,8 @@ def download_audio_with_progress(url, format="mp3", progress_callback=None):
             }
         ],
         "noplaylist": False,  # Permitir download de playlists
+        "concurrent-fragments": 4,  # Número de fragmentos baixados em paralelo
+        "concurrent-downloads": 2,  # Número de vídeos baixados em paralelo (útil para playlists)
     }
 
     with YoutubeDL(ydl_opts) as ydl:
